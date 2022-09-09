@@ -6,6 +6,7 @@ import org.osbot.rs07.api.Chatbox;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.Entity;
+import org.osbot.rs07.api.model.Item;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.Skill;
@@ -50,8 +51,10 @@ public class BlastFurnaceScript extends Script {
     private final Area BANK_AREA = new Area(1943,4960,1950,4958);
     private final Area CONVEYOR_AREA = new Area(1930,4968,1940,4964);
     private int taskCounter = 0;
+    private int errorCounter = 0;
     private long lastTimeReset = 0;
     private long nextPause = System.currentTimeMillis()+ (long) random(30, 60) *60*1000;
+    private boolean checkedStateOnStart = false;
     @Override
     public void onStart() throws InterruptedException {
         try {
@@ -126,6 +129,13 @@ public class BlastFurnaceScript extends Script {
     @Override
     public int onLoop() throws InterruptedException {
         try {
+            if (!checkedStateOnStart) {
+                if (BLAST_FURNACE_AREA.contains(myPlayer().getPosition())) {
+                    if (oreToSmelt.equals("Mithril ore")) {
+                        checkStateOnStart();
+                    }
+                }
+            }
             if (!BLAST_FURNACE_AREA.contains(myPlayer().getPosition()) && stateGE.equals("idle")) {
                 log("Going to blast furnace");
                 goToBlastFurnace();
@@ -158,6 +168,10 @@ public class BlastFurnaceScript extends Script {
                     case "buyFromGE":
                         buyFromGE();
                         return 100;
+                }
+                if (state.equals("banking") && (getConfigs().get(795)<100000)) {
+                    log("Money deposit almost empty, restocking now");
+                    restockMoneyDeposit();
                 }
 
                 checkCamera();
@@ -267,10 +281,19 @@ public class BlastFurnaceScript extends Script {
             return 0;
 
         } catch(Exception e) {
-            log("ERROR");
+            log("ERROR, script gave error at: "+state);
             log(e);
-            stop();
-            return 30000;
+            if (errorCounter>=5) {
+                log("Stopping script, script gave error at: " + state);
+                log("Starting break of 60 minutes");
+                customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(60), true);
+                return 10000;
+            } else {
+                errorCounter++;
+                return 3000;
+            }
+
+//            stop();
         }
 
     }
@@ -353,7 +376,17 @@ public class BlastFurnaceScript extends Script {
                         return;
                     }
                 }
-                getInventory().getItem("Coal bag").interact("Fill");
+                Item coalbag = getInventory().getItem("Coal bag");
+                if (coalbag!=null) {
+                    coalbag.interact("Fill");
+                } else {
+                    log("No coalbag in inventory, getting coalbag from bank");
+                    bank.withdraw("Coal bag", 1);
+                    sleep(700,1000);
+                    resetBanking();
+                    return;
+
+                }
                 bank.withdrawAll(ore);
                 if ((getChatbox().getMessages(Chatbox.MessageType.ALL).get(0).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(1).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(2).equals("The coal bag contains 27 pieces of coal."))){
                     bank.close();
@@ -651,6 +684,8 @@ public class BlastFurnaceScript extends Script {
             log("0 mithril bars -> trip 2");
             trip = 2;
         }
+        checkedStateOnStart = true;
+
     }
 
     private void payForeman() {
@@ -805,6 +840,9 @@ public class BlastFurnaceScript extends Script {
             } else {
                 log("Collected items from collection box");
                 stateGE = "idle";
+                coalInBank = 200;
+                mithrilOreInBank = 200;
+                staminaPotionInBank = 200;
             }
 
         }
@@ -920,6 +958,10 @@ public class BlastFurnaceScript extends Script {
         }
     }
 
+    private void restockMoneyDeposit() {
+        ;
+    }
+
     private boolean interactionEvent(Entity entity, String action) {
         InteractionEvent ev = new InteractionEvent(entity, action);
         if (useCameraForInteract){
@@ -963,6 +1005,5 @@ public class BlastFurnaceScript extends Script {
         profile.setOvershoots(1); //2
         getBot().setMouseMoveProfile(profile);
     }
-
 
 }
