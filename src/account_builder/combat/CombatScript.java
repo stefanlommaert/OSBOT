@@ -111,7 +111,7 @@ public class CombatScript extends Script {
     }
 
     public void attack() throws InterruptedException {
-        if (getHp() < 15) {
+        if (getHp() < 8) {
             heal();
         }
 

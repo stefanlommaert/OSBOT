@@ -61,10 +61,16 @@ public class AntiBotDetection {
     public void checkXP() throws InterruptedException {
         bot.getTabs().open(Tab.SKILLS);
         int id = 17;
-        if (script.equals("motherlode")) {
-            id = 17;
-        } else if (script.equals("woodcutting")) {
-            id = 22;
+        switch (script) {
+            case "motherlode":
+                id = 17;
+                break;
+            case "fishing":
+                id = 19;
+                break;
+            case "woodcutting":
+                id = 22;
+                break;
         }
         RS2Widget xpIcon = bot.getWidgets().get(320, id);
         if (xpIcon!=null) {

@@ -41,6 +41,7 @@ public class BlastFurnaceScript extends Script {
     private int totalBarsMade = 0;
     private String state = "banking";
     private String stateGE = "idle";
+    private boolean breakingStatus = false;
     private int trip = 1;
     private String ore = "Coal";
     private String oreToSmelt = "Mithril ore";
@@ -124,6 +125,10 @@ public class BlastFurnaceScript extends Script {
         g.drawString(coalInBank + " coal", 10, 104+16*3);
         g.drawString(mithrilOreInBank+" mithril ore", 10, 104+16*4);
         g.drawString(staminaPotionInBank+" stamina potions", 10, 104+16*5);
+        if (breakingStatus) {
+            g.setColor(Color.red);
+            g.fillOval(200, 200, 50, 50);
+        }
     }
 
     @Override
@@ -155,7 +160,7 @@ public class BlastFurnaceScript extends Script {
                         log("Stopping script, script has already been reset. Stuck at: " + state);
                         log("Starting break of 60 minutes");
                         customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(60), true);
-                        return 5000;
+                        return 10000;
                     }
                 }
                 switch (stateGE) {
@@ -163,8 +168,12 @@ public class BlastFurnaceScript extends Script {
                         checkGECollect();
                         return 100;
                     case "goToGE":
-                        goToGE();
-                        return 100;
+                        log("Stopping script, out of resources: " + state);
+                        log("Starting break of 60 minutes");
+                        customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(60), true);
+                        return 10000;
+//                        goToGE();
+//                        return 100;
                     case "buyFromGE":
                         buyFromGE();
                         return 100;
@@ -179,7 +188,7 @@ public class BlastFurnaceScript extends Script {
                     if (staminaPotionInBank<5) {
                         log("Out of stamina, please restock");
                         customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(60), true);
-                        return 5000;
+                        return 10000;
                     }
                     log("Out of materials, checking GE collect");
                     stateGE = "checkGECollect";
@@ -191,6 +200,7 @@ public class BlastFurnaceScript extends Script {
                 }
                 if ((state.equals("banking") || state.equals("putOnConveyor")) && (System.currentTimeMillis() > nextPause) && (skills.getStatic(Skill.SMITHING) >= 60)) {
                     log("Pausing for some minutes");
+                    breakingStatus = true;
                     nextPause = System.currentTimeMillis() + (long) random(35, 65) * 1000 * 60;
                     customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(random(5, 8)), true);
                     return 5000;
@@ -303,6 +313,7 @@ public class BlastFurnaceScript extends Script {
         if (bankChest != null) {
             interactionEvent(bankChest, "Use");
         }
+        breakingStatus=false;
         new ConditionalSleep(1000) {
             @Override
             public boolean condition() {

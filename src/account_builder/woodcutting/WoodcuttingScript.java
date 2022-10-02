@@ -8,6 +8,7 @@ import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
 import utils.AntiBotDetection;
+import utils.InventoryManagement;
 import utils.MouseCursor;
 import utils.MouseTrail;
 
@@ -21,6 +22,8 @@ public class WoodcuttingScript extends Script {
     private MouseTrail trail = new MouseTrail(0, 255, 255, 2000, this);
     private MouseCursor cursor = new MouseCursor(25, 2, Color.red, this);
     AntiBotDetection antiBotDetection = new AntiBotDetection(this, "woodcutting");
+    InventoryManagement inventoryManagement = new InventoryManagement(this);
+
     String treeName = "Tree";
     long start_time = System.currentTimeMillis();
     int durationUntilNextAntiBan = 60000*8;
@@ -61,6 +64,7 @@ public class WoodcuttingScript extends Script {
 
             }
             if (getInventory().isFull()) {
+//                inventoryManagement.dropAll("Oak logs");
                 bankDeposit();
                 walkToTree();
             }
@@ -133,7 +137,7 @@ public class WoodcuttingScript extends Script {
     private void walkToTree() {
         log("Walking to area.");
         if (!getWalking().webWalk(treeArea.getRandomPosition())) {
-            getWalking().webWalk(treeArea.getRandomPosition());
+            getWalking().webWalk(treeArea);
         }
     }
 
