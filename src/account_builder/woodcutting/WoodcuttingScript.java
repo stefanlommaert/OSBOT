@@ -64,9 +64,9 @@ public class WoodcuttingScript extends Script {
 
             }
             if (getInventory().isFull()) {
-//                inventoryManagement.dropAll("Oak logs");
-                bankDeposit();
-                walkToTree();
+                inventoryManagement.dropAll("Oak logs");
+//                bankDeposit();
+//                walkToTree();
             }
 
             Entity tree = getObjects().closest(treeName);

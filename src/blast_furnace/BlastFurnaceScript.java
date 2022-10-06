@@ -120,8 +120,8 @@ public class BlastFurnaceScript extends Script {
         long totalTime = System.currentTimeMillis() - startTimeScript;
         int profit = (660-106-(135*2))*totalBarsMade;
         g.drawString("Time run: "+GUI.formatTime(totalTime), 10, 104);
-        g.drawString("XP/H: "+GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.SMITHING)), 10, 104+16);
-        g.drawString("Total profit: "+GUI.formatValue(profit), 10, 104+16*2);
+        g.drawString("XP/H: "+ utils.GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.SMITHING)), 10, 104+16);
+        g.drawString("Total profit: "+ utils.GUI.formatValue(profit), 10, 104+16*2);
         g.drawString(coalInBank + " coal", 10, 104+16*3);
         g.drawString(mithrilOreInBank+" mithril ore", 10, 104+16*4);
         g.drawString(staminaPotionInBank+" stamina potions", 10, 104+16*5);

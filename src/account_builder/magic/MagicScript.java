@@ -1,4 +1,4 @@
-package account_builder.combat;
+package account_builder.magic;
 
 import org.osbot.rs07.api.filter.Filter;
 import org.osbot.rs07.api.map.Area;

@@ -62,7 +62,7 @@ public class AntiBotDetection {
         bot.getTabs().open(Tab.SKILLS);
         int id = 17;
         switch (script) {
-            case "motherlode":
+            case "mining":
                 id = 17;
                 break;
             case "fishing":

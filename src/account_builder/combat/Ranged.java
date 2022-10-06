@@ -70,15 +70,15 @@ public class Ranged extends Script {
                 getInventory().getItem("Adamant arrow").interact("Wield");
             }
             if (getSkills().getStatic(Skill.RANGED)==20 && getInventory().contains("Coif")) {
-                getInventory().getItem("Coif").interact("Wield");
+                getInventory().getItem("Coif").interact("Wear");
             }
             if (getSkills().getStatic(Skill.RANGED)==20 && getInventory().contains("Studded chaps")) {
-                getInventory().getItem("Studded chaps").interact("Wield");
+                getInventory().getItem("Studded chaps").interact("Wear");
             } else if (getSkills().getStatic(Skill.RANGED)==40 && getInventory().contains("Green d'hide chaps")) {
-                getInventory().getItem("Green d'hide chaps").interact("Wield");
+                getInventory().getItem("Green d'hide chaps").interact("Wear");
             }
             if (getSkills().getStatic(Skill.RANGED)==40 && getInventory().contains("Green d'hide vambraces")) {
-                getInventory().getItem("Green d'hide vambraces").interact("Wield");
+                getInventory().getItem("Green d'hide vambraces").interact("Wear");
             }
 
             if (!hasFood()) {
@@ -102,10 +102,21 @@ public class Ranged extends Script {
     }
 
     public boolean isReadyToAttack() {
-        if (!hasFood() || getCombat().isFighting() || myPlayer().isUnderAttack() || myPlayer().isAnimating()) {
-            return false;
+        long start_time = System.currentTimeMillis();
+        new ConditionalSleep(600) {
+            @Override
+            public boolean condition() {
+                return !hasFood() || getCombat().isFighting() || myPlayer().isUnderAttack() || myPlayer().isAnimating() || myPlayer().isMoving();
+            }
+        }.sleep();
+        long end_time = System.currentTimeMillis();
+        if (end_time-start_time>500) {
+            return true;
         }
-        return true;
+//        if (!hasFood() || getCombat().isFighting() || myPlayer().isUnderAttack() || myPlayer().isAnimating() || myPlayer().isMoving()) {
+//            return false;
+//        }
+        return false;
     }
 
     public void attack() throws InterruptedException {
@@ -124,7 +135,7 @@ public class Ranged extends Script {
         NPC enemy = getNpcs().closest(myFilter);
         if (enemy != null && !enemy.isUnderAttack()) {
             interactionEvent(enemy, "Attack");
-            new ConditionalSleep(600) {
+            new ConditionalSleep(1800) {
                 @Override
                 public boolean condition() {
                     return !enemy.exists();

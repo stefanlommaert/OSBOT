@@ -10,7 +10,7 @@ public class GUI {
     }
 
 
-    public final String formatValue(final long l) {
+    public static final String formatValue(final long l) {
         return (l > 1_000_000) ? String.format("%.2fm", ((double) l / 1_000_000))
                 : (l > 1000) ? String.format("%.1fk", ((double) l / 1000))
                 : l + "";

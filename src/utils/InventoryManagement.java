@@ -16,6 +16,7 @@ import static org.osbot.rs07.script.MethodProvider.random;
 public class InventoryManagement {
 
     private final MethodProvider bot;
+    private final int[] DROP_PATTERN_1 = {0,1,2,3,7,6,5,4,8,9,10,11,15,14,13,12,16,17,18,19,23,22,21,20,24,25,26,27};
 
     public InventoryManagement(MethodProvider bot) {
         this.bot = bot;
@@ -36,15 +37,11 @@ public class InventoryManagement {
                 return false;
             }
         }.sleep();
-        for (int slot : itemSlots) {
-            inventory.hover(slot);
-            bot.mouse.click(false);
-            new ConditionalSleep(random(5,10)) {
-                @Override
-                public boolean condition() {
-                    return false;
-                }
-            }.sleep();
+        for (int slot : DROP_PATTERN_1) {
+            if (itemSlots.contains((slot))) {
+                inventory.hover(slot);
+                bot.mouse.click(false);
+            }
         }
         new ConditionalSleep(random(50,100)) {
             @Override

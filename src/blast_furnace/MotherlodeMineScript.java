@@ -24,7 +24,7 @@ import java.util.Arrays;
 
 @ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "Stefan Motherlode Mine")
 public class MotherlodeMineScript extends Script {
-    AntiBotDetection antiBotDetection = new AntiBotDetection(this, "motherlode");
+    AntiBotDetection antiBotDetection = new AntiBotDetection(this, "mining");
     long timeLastAntiBan = System.currentTimeMillis();
     int durationUntilNextAntiBan = 60000*8;
     private final MouseTrail trail = new MouseTrail(0, 255, 255, 2000, this);
