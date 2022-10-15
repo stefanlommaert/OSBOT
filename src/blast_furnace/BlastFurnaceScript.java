@@ -119,7 +119,7 @@ public class BlastFurnaceScript extends Script {
         g.setColor(Color.white);
         long totalTime = System.currentTimeMillis() - startTimeScript;
         int profit = (660-106-(135*2))*totalBarsMade;
-        g.drawString("Time run: "+GUI.formatTime(totalTime), 10, 104);
+        g.drawString("Time run: "+ utils.GUI.formatTime(totalTime), 10, 104);
         g.drawString("XP/H: "+ utils.GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.SMITHING)), 10, 104+16);
         g.drawString("Total profit: "+ utils.GUI.formatValue(profit), 10, 104+16*2);
         g.drawString(coalInBank + " coal", 10, 104+16*3);
@@ -194,7 +194,7 @@ public class BlastFurnaceScript extends Script {
                     stateGE = "checkGECollect";
                     return 1000;
                 }
-                if (skills.getStatic(Skill.SMITHING) < 60 && state.equals("banking") && (System.currentTimeMillis() - timePayedForeman) > 540000) {
+                if (skills.getStatic(Skill.SMITHING) < 60 && state.equals("banking") && (System.currentTimeMillis() - timePayedForeman) > 500000) {
                     log("Paying foreman");
                     payForeman();
                 }

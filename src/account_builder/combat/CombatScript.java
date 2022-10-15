@@ -11,12 +11,18 @@ import org.osbot.rs07.event.InteractionEvent;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
+import utils.GUI;
+import utils.MouseCursor;
+import utils.MouseTrail;
 
+import java.awt.*;
 import java.util.ArrayList;
 
 @ScriptManifest(info = "",logo = "", version = 1, author = "stefan3140", name = "Stefan Combat")
 public class CombatScript extends Script {
     private ArrayList<Area> areas;
+    private MouseTrail trail = new MouseTrail(0, 255, 255, 2000, this);
+    private MouseCursor cursor = new MouseCursor(25, 2, Color.red, this);
     Area bankArea = Banks.LUMBRIDGE_UPPER;
     Area frogArea = new Area(3196, 3177, 3203, 3171);
     Area chickenArea = new Area(3228, 3300, 3231, 3298);
@@ -28,6 +34,7 @@ public class CombatScript extends Script {
         try {
             log("Bot started");
             log("Combat V3");
+            getExperienceTracker().start(Skill.STRENGTH);
             log(getSkills().getStatic(Skill.ATTACK)+getSkills().getStatic(Skill.DEFENCE) + getSkills().getStatic(Skill.STRENGTH));
             if (getSkills().getStatic(Skill.ATTACK)+getSkills().getStatic(Skill.DEFENCE) + getSkills().getStatic(Skill.STRENGTH)<30) {
                 log("Training at chickens");
@@ -47,6 +54,16 @@ public class CombatScript extends Script {
             log(e);
         }
     }
+
+    public void onPaint(Graphics2D g){
+        trail.paint(g);
+        cursor.paint(g);
+        Font font = new Font("Open Sans", Font.PLAIN, 16);
+        g.setFont(font);
+        g.setColor(Color.white);
+        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.STRENGTH)), 10, 104);
+    }
+
     @Override
     public int onLoop() throws InterruptedException {
         try {

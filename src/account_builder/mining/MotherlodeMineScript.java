@@ -1,4 +1,4 @@
-package blast_furnace;
+package account_builder.mining;
 
 import org.osbot.rs07.api.DepositBox;
 import org.osbot.rs07.api.filter.Filter;
@@ -7,6 +7,7 @@ import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.model.Entity;
 import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.RS2Widget;
+import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.InteractionEvent;
 import org.osbot.rs07.event.WebWalkEvent;
@@ -14,9 +15,7 @@ import org.osbot.rs07.event.interaction.MouseMoveProfile;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
-import utils.AntiBotDetection;
-import utils.MouseCursor;
-import utils.MouseTrail;
+import utils.*;
 
 import java.awt.*;
 import java.util.ArrayList;
@@ -24,9 +23,16 @@ import java.util.Arrays;
 
 @ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "Stefan Motherlode Mine")
 public class MotherlodeMineScript extends Script {
+    CustomBreakManager customBreakManager = new CustomBreakManager();
+
     AntiBotDetection antiBotDetection = new AntiBotDetection(this, "mining");
     long timeLastAntiBan = System.currentTimeMillis();
     int durationUntilNextAntiBan = 60000*8;
+    long start_time = System.currentTimeMillis();
+    private long nextPause = System.currentTimeMillis()+ (long) random(30, 60) *60*1000;
+
+    private boolean breakingStatus = false;
+
     private final MouseTrail trail = new MouseTrail(0, 255, 255, 2000, this);
     private final MouseCursor cursor = new MouseCursor(25, 2, Color.red, this);
 
@@ -137,6 +143,9 @@ Position[] hopperArea = {
         try {
             log("Bot started");
             log("Mother lode V2");
+            customBreakManager.exchangeContext(getBot());
+            getBot().getRandomExecutor().overrideOSBotRandom(customBreakManager);
+            getExperienceTracker().start(Skill.MINING);
 //            setMouseProfile();
 
         } catch(Exception e) {
@@ -149,6 +158,17 @@ Position[] hopperArea = {
     public void onPaint(Graphics2D g){
         trail.paint(g);
         cursor.paint(g);
+        long totalTime = System.currentTimeMillis() - start_time;
+
+        Font font = new Font("Open Sans", Font.PLAIN, 16);
+        g.setFont(font);
+        g.setColor(Color.white);
+        g.drawString("Time run: "+GUI.formatTime(totalTime), 10, 104);
+        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.MINING)), 10, 104+16);
+        if (breakingStatus) {
+            g.setColor(Color.red);
+            g.fillOval(200, 200, 50, 50);
+        }
     }
 
     @Override
@@ -311,7 +331,7 @@ Position[] hopperArea = {
             hopTo = worlds[rand];
         } else {
             log("Name did not match to custom worlds");
-            int[] worlds = {463,464,465,466};
+            int[] worlds = {351,359,360,367,368,375,376};
             int rand = random(0, worlds.length - 1);
             hopTo = worlds[rand];
         }
