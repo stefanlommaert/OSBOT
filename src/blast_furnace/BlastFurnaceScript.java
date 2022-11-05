@@ -28,19 +28,20 @@ import java.util.concurrent.TimeUnit;
 
 @ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "Stefan Blast Furnace")
 public class BlastFurnaceScript extends Script {
+    private int priceRuniteOre = 11275;
     CustomBreakManager customBreakManager = new CustomBreakManager();
 
     private long startTimeScript;
-    private final GUI GUI= new GUI();
     private final MouseTrail TRAIL = new MouseTrail(0, 255, 255, 1000, this);
     private final MouseCursor CURSOR = new MouseCursor(25, 2, Color.red, this);
     private int mithrilOreInBank = 1;
+    private int runiteOreInBank = 1;
     private int coalInBank = 1;
     private int staminaPotionInBank = 1;
-
     private int totalBarsMade = 0;
     private String state = "banking";
     private String stateGE = "idle";
+    private boolean didCollectFromDeposit = false;
     private boolean breakingStatus = false;
     private int trip = 1;
     private String ore = "Coal";
@@ -72,6 +73,9 @@ public class BlastFurnaceScript extends Script {
                 log("Smithing<50 -> smelting Iron ores");
                 oreToSmelt = "Iron ore";
             }
+//            if (getSkills().getStatic(Skill.SMITHING)>85) {
+//                oreToSmelt = "Runite ore";
+//            }
             sleep(100,200);
             getMouse().move(random(80,120), random(80,120));
             sleep(1000,2000);
@@ -98,11 +102,8 @@ public class BlastFurnaceScript extends Script {
                 log("Going to blast furnace");
                 goToBlastFurnace();
                 sleep(2000,3000);
-            }
-            if (BLAST_FURNACE_AREA.contains(myPlayer().getPosition())) {
-                if (oreToSmelt.equals("Mithril ore")) {
-                    checkStateOnStart();
-                }
+            } else {
+                checkStateOnStart();
             }
 
         } catch(Exception e) {
@@ -118,12 +119,19 @@ public class BlastFurnaceScript extends Script {
         g.setFont(font);
         g.setColor(Color.white);
         long totalTime = System.currentTimeMillis() - startTimeScript;
-        int profit = (660-106-(135*2))*totalBarsMade;
+        if ((totalBarsMade>500)&& getExperienceTracker().getGainedXPPerHour(Skill.SMITHING)<50000) { // if longer than 45 min and less than 50k XP/h
+            log("Stopping script, because not enough xp/h");
+            stop();
+        }
         g.drawString("Time run: "+ utils.GUI.formatTime(totalTime), 10, 104);
         g.drawString("XP/H: "+ utils.GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.SMITHING)), 10, 104+16);
-        g.drawString("Total profit: "+ utils.GUI.formatValue(profit), 10, 104+16*2);
+        g.drawString("Total bars made: "+ totalBarsMade, 10, 104+16*2);
         g.drawString(coalInBank + " coal", 10, 104+16*3);
-        g.drawString(mithrilOreInBank+" mithril ore", 10, 104+16*4);
+        if (oreToSmelt.equals("Mithril ore")) {
+            g.drawString(mithrilOreInBank + " mithril ore", 10, 104 + 16 * 4);
+        } else if (oreToSmelt.equals("Runite ore")) {
+            g.drawString(runiteOreInBank + " runite ore", 10, 104 + 16 * 4);
+        }
         g.drawString(staminaPotionInBank+" stamina potions", 10, 104+16*5);
         if (breakingStatus) {
             g.setColor(Color.red);
@@ -134,11 +142,28 @@ public class BlastFurnaceScript extends Script {
     @Override
     public int onLoop() throws InterruptedException {
         try {
-            if (!checkedStateOnStart) {
-                if (BLAST_FURNACE_AREA.contains(myPlayer().getPosition())) {
-                    if (oreToSmelt.equals("Mithril ore")) {
+            if (taskCounter == 4) {
+                useCameraForInteract = true;
+            }
+            if (taskCounter >= 5) {
+                if ((System.currentTimeMillis() - lastTimeReset) > 1800000) {
+                    log("Resetting script, bot is stuck at: " + state);
+                    lastTimeReset = System.currentTimeMillis();
+                    taskCounter = 0;
+                    state = "banking";
+                    if (BLAST_FURNACE_AREA.contains(myPlayer().getPosition())) {
                         checkStateOnStart();
                     }
+                } else {
+                    log("Stopping script, script has already been reset. Stuck at: " + state + ", " + stateGE);
+                    log("Starting break of 60 minutes");
+                    customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(60), true);
+                    return 10000;
+                }
+            }
+            if (!checkedStateOnStart) {
+                if (BLAST_FURNACE_AREA.contains(myPlayer().getPosition())) {
+                    checkStateOnStart();
                 }
             }
             if (!BLAST_FURNACE_AREA.contains(myPlayer().getPosition()) && stateGE.equals("idle")) {
@@ -146,34 +171,13 @@ public class BlastFurnaceScript extends Script {
                 goToBlastFurnace();
                 sleep(2000,3000);
             } else {
-                if (taskCounter == 4) {
-                    useCameraForInteract = true;
-                }
-                if (taskCounter >= 5) {
-                    if ((System.currentTimeMillis() - lastTimeReset) > 1800000) {
-                        log("Resetting script, bot is stuck at: " + state);
-                        lastTimeReset = System.currentTimeMillis();
-                        taskCounter = 0;
-                        state = "banking";
-                        checkStateOnStart();
-                    } else {
-                        log("Stopping script, script has already been reset. Stuck at: " + state);
-                        log("Starting break of 60 minutes");
-                        customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(60), true);
-                        return 10000;
-                    }
-                }
                 switch (stateGE) {
                     case "checkGECollect":
                         checkGECollect();
                         return 100;
                     case "goToGE":
-                        log("Stopping script, out of resources: " + state);
-                        log("Starting break of 60 minutes");
-                        customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(60), true);
-                        return 10000;
-//                        goToGE();
-//                        return 100;
+                        goToGE();
+                        return 100;
                     case "buyFromGE":
                         buyFromGE();
                         return 100;
@@ -184,7 +188,7 @@ public class BlastFurnaceScript extends Script {
                 }
 
                 checkCamera();
-                if (state.equals("banking")&&((mithrilOreInBank != 1 && mithrilOreInBank < 100) || (coalInBank != 1 && coalInBank < 100) || (staminaPotionInBank != 1 && staminaPotionInBank < 5))) {
+                if (state.equals("banking")&&((mithrilOreInBank != 1 && mithrilOreInBank < 100)|| (runiteOreInBank != 1 && runiteOreInBank < 56) || (coalInBank != 1 && coalInBank < 100) || (staminaPotionInBank != 1 && staminaPotionInBank < 5))) {
                     if (staminaPotionInBank<5) {
                         log("Out of stamina, please restock");
                         customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(60), true);
@@ -206,86 +210,180 @@ public class BlastFurnaceScript extends Script {
                     return 5000;
                 }
 
-                if (oreToSmelt.equals("Mithril ore")) {
-                    if (trip == 1) {
-                        switch (state) {
-                            case "banking":
-                                log("Banking trip 1");
-                                ore = "Coal";
-                                bankItems();
-                                break;
-                            case "putOresOnConveyor":
-                                log("Going to conveyor");
-                                putOresOnConveyor();
-                                break;
-                            case "emptyCoalbag":
-                                log("Emptying coalbag");
-                                emptyCoalbag();
-                                break;
-                            case "getFromFurnace":
-                                log("Getting bars from furnace");
-                                getFromFurnace();
-                                break;
+                switch (oreToSmelt) {
+                    case "Mithril ore":
+                        if (trip == 1) {
+                            switch (state) {
+                                case "banking":
+                                    log("Banking trip 1");
+                                    ore = "Coal";
+                                    bankItems();
+                                    break;
+                                case "putOresOnConveyor":
+                                    log("Going to conveyor");
+                                    putOresOnConveyor();
+                                    break;
+                                case "emptyCoalbag":
+                                    log("Emptying coalbag");
+                                    emptyCoalbag();
+                                    break;
+                                case "getFromFurnace":
+                                    log("Getting bars from furnace");
+                                    getFromFurnace();
+                                    break;
+                            }
+                        } else if (trip == 2) {
+                            switch (state) {
+                                case "banking":
+                                    log("Banking trip 2");
+                                    ore = "Mithril ore";
+                                    bankItems();
+                                    break;
+                                case "putOresOnConveyor":
+                                    log("Going to conveyor");
+                                    putOresOnConveyor();
+                                    break;
+                                case "emptyCoalbag":
+                                    log("Emptying coalbag");
+                                    emptyCoalbag();
+                                    break;
+                            }
+                        } else if (trip == 3) {
+                            switch (state) {
+                                case "banking":
+                                    log("Banking trip 3");
+                                    ore = "Mithril ore";
+                                    bankItems();
+                                    break;
+                                case "putOresOnConveyor":
+                                    log("Going to conveyor");
+                                    putOresOnConveyor();
+                                    break;
+                                case "emptyCoalbag":
+                                    log("Emptying coalbag");
+                                    emptyCoalbag();
+                                    break;
+                                case "getFromFurnace":
+                                    log("Getting bars from furnace");
+                                    getFromFurnace();
+                                    break;
+                            }
                         }
-                    } else if (trip == 2) {
-                        switch (state) {
-                            case "banking":
-                                log("Banking trip 2");
-                                ore = "Mithril ore";
-                                bankItems();
-                                break;
-                            case "putOresOnConveyor":
-                                log("Going to conveyor");
-                                putOresOnConveyor();
-                                break;
-                            case "emptyCoalbag":
-                                log("Emptying coalbag");
-                                emptyCoalbag();
-                                break;
+                        break;
+                    case "Iron ore":
+                        if (trip == 1) {
+                            switch (state) {
+                                case "banking":
+                                    log("Banking trip 1");
+                                    ore = "Iron ore";
+                                    bankItems();
+                                    break;
+                                case "putOresOnConveyor":
+                                    log("Going to conveyor");
+                                    putOresOnConveyor();
+                                    break;
+                                case "emptyCoalbag":
+                                    log("Emptying coalbag");
+                                    emptyCoalbag();
+                                    break;
+                                case "getFromFurnace":
+                                    log("Getting bars from furnace");
+                                    getFromFurnace();
+                                    break;
+                            }
                         }
-                    } else if (trip == 3) {
-                        switch (state) {
-                            case "banking":
-                                log("Banking trip 3");
-                                ore = "Mithril ore";
-                                bankItems();
-                                break;
-                            case "putOresOnConveyor":
-                                log("Going to conveyor");
-                                putOresOnConveyor();
-                                break;
-                            case "emptyCoalbag":
-                                log("Emptying coalbag");
-                                emptyCoalbag();
-                                break;
-                            case "getFromFurnace":
-                                log("Getting bars from furnace");
-                                getFromFurnace();
-                                break;
+                        break;
+                    case "Runite ore":
+                        if (trip == 1) {
+                            switch (state) {
+                                case "banking":
+                                    log("Banking trip 1");
+                                    ore = "Coal";
+                                    bankItems();
+                                    break;
+                                case "putOresOnConveyor":
+                                    log("Going to conveyor");
+                                    putOresOnConveyor();
+                                    break;
+                                case "emptyCoalbag":
+                                    log("Emptying coalbag");
+                                    emptyCoalbag();
+                                    break;
+                                case "getFromFurnace":
+                                    log("Getting bars from furnace");
+                                    getFromFurnace();
+                                    break;
+                            }
+                        } else if (trip == 2) {
+                            switch (state) {
+                                case "banking":
+                                    log("Banking trip 2");
+                                    ore = "Coal";
+                                    bankItems();
+                                    break;
+                                case "putOresOnConveyor":
+                                    log("Going to conveyor");
+                                    putOresOnConveyor();
+                                    break;
+                                case "emptyCoalbag":
+                                    log("Emptying coalbag");
+                                    emptyCoalbag();
+                                    break;
+                            }
+                        } else if (trip == 3) {
+                            switch (state) {
+                                case "banking":
+                                    log("Banking trip 3");
+                                    ore = "Runite ore";
+                                    bankItems();
+                                    break;
+                                case "putOresOnConveyor":
+                                    log("Going to conveyor");
+                                    putOresOnConveyor();
+                                    break;
+                                case "emptyCoalbag":
+                                    log("Emptying coalbag");
+                                    emptyCoalbag();
+                                    break;
+                            }
+                        } else if (trip == 4) {
+                            switch (state) {
+                                case "banking":
+                                    log("Banking trip 4");
+                                    ore = "Coal";
+                                    bankItems();
+                                    break;
+                                case "putOresOnConveyor":
+                                    log("Going to conveyor");
+                                    putOresOnConveyor();
+                                    break;
+                                case "emptyCoalbag":
+                                    log("Emptying coalbag");
+                                    emptyCoalbag();
+                                    break;
+                                case "getFromFurnace":
+                                    log("Getting bars from furnace");
+                                    getFromFurnace();
+                                    break;
+                            }
+                        } else if (trip == 5) {
+                            switch (state) {
+                                case "banking":
+                                    log("Banking trip 5");
+                                    ore = "Runite ore";
+                                    bankItems();
+                                    break;
+                                case "putOresOnConveyor":
+                                    log("Going to conveyor");
+                                    putOresOnConveyor();
+                                    break;
+                                case "emptyCoalbag":
+                                    log("Emptying coalbag");
+                                    emptyCoalbag();
+                                    break;
+                            }
                         }
-                    }
-                } else if (oreToSmelt.equals("Iron ore")) {
-                    if (trip == 1) {
-                        switch (state) {
-                            case "banking":
-                                log("Banking trip 1");
-                                ore = "Iron ore";
-                                bankItems();
-                                break;
-                            case "putOresOnConveyor":
-                                log("Going to conveyor");
-                                putOresOnConveyor();
-                                break;
-                            case "emptyCoalbag":
-                                log("Emptying coalbag");
-                                emptyCoalbag();
-                                break;
-                            case "getFromFurnace":
-                                log("Getting bars from furnace");
-                                getFromFurnace();
-                                break;
-                        }
-                    }
+                        break;
                 }
             }
             return 0;
@@ -302,8 +400,6 @@ public class BlastFurnaceScript extends Script {
                 errorCounter++;
                 return 3000;
             }
-
-//            stop();
         }
 
     }
@@ -345,11 +441,15 @@ public class BlastFurnaceScript extends Script {
                 }
             }.sleep();
             if (bank.isOpen()) {
-                mithrilOreInBank = getBank().getItem("Mithril ore").getAmount();
+                bank.depositAllExcept("Coal bag");
+                sleep(650,700);
+                if (oreToSmelt.equals("Mithril ore")) {
+                    mithrilOreInBank = getBank().getItem("Mithril ore").getAmount();
+                } else if (oreToSmelt.equals("Runite ore")) {
+                    runiteOreInBank = getBank().getItem("Runite ore").getAmount();
+                }
                 coalInBank = getBank().getItem("Coal").getAmount();
                 staminaPotionInBank = getBank().getItem("Stamina potion(1)").getAmount();
-                sleep(200, 300);
-                bank.depositAllExcept("Coal bag");
                 if (settings.getRunEnergy() < 75 || ((System.currentTimeMillis() - lastDrankEnergy) > 110000)) {
                     bank.withdraw("Stamina potion(1)", 1);
                     new ConditionalSleep(2000) {
@@ -460,10 +560,17 @@ public class BlastFurnaceScript extends Script {
                         return !myPlayer().isMoving() || !getInventory().isFull();
                     }
                 }.sleep();
-                if (trip!=3 && random(0,10)>1) {
-                    getInventory().hover(0); // Hover over coalbag
-                } else if (trip == 3) {
-                    getInventory().hover(0); // Hover over coalbag
+                if (oreToSmelt.equals("Mithril ore")) {
+                    if (trip != 3 && random(0, 10) > 1) {
+                        getInventory().hover(0); // Hover over coalbag
+                    } else if (trip == 3) {
+                        getInventory().hover(0); // Hover over coalbag
+                    }
+                } else {
+                    if (random(0, 10) > 1) {
+                        getInventory().hover(0); // Hover over coalbag
+                    }
+
                 }
                 new ConditionalSleep(8000) {
                     @Override
@@ -477,7 +584,6 @@ public class BlastFurnaceScript extends Script {
                 taskCounter = 0;
             } else {
                 log("Walking to conveyor");
-                log("Trip: "+trip);
                 walkEvent(CONVEYOR_AREA.getRandomPosition());
                 sleep(500,700);
                 taskCounter++;
@@ -491,11 +597,13 @@ public class BlastFurnaceScript extends Script {
         getInventory().getItem("Coal bag").interact("Empty");
         sleep(50,100);
         getKeyboard().releaseKey(16);
-        int mithrilBarInCollector = getConfigs().get(545)>>24;
-        if (mithrilBarInCollector==28) {
-            log("Bot was too slow to put coal in time, resetting furnace");
-            checkStateOnStart();
-            return;
+        if (oreToSmelt.equals("Mithril ore")) {
+            int mithrilBarInCollector = getConfigs().get(545) >> 24;
+            if (mithrilBarInCollector == 28) {
+                log("Bot was too slow to put coal in time, resetting furnace");
+                checkStateOnStart();
+                return;
+            }
         }
         getObjects().closest(9100).hover(); // Hover over conveyor belt
         new ConditionalSleep(1000) {
@@ -511,6 +619,12 @@ public class BlastFurnaceScript extends Script {
                 sleep(100,200);
                 if (oreToSmelt.equals("Mithril ore") || oreToSmelt.equals("Iron ore")) {
                     if (trip == 1 || trip == 3) {
+                        if (random(0,10)!=2) {
+                            getObjects().closest(9092).hover(); // Hover over bar dispenser
+                        }
+                    }
+                } else if (oreToSmelt.equals("Runite ore")) {
+                    if (trip == 1 || trip == 4) {
                         if (random(0,10)!=2) {
                             getObjects().closest(9092).hover(); // Hover over bar dispenser
                         }
@@ -533,6 +647,16 @@ public class BlastFurnaceScript extends Script {
                     } else if (oreToSmelt.equals("Iron ore")) {
                         sleep(3000,4000);
                         state = "getFromFurnace";
+                    } else if (oreToSmelt.equals("Runite ore")) {
+                        if (trip == 1 || trip == 4) {
+                            state = "getFromFurnace";
+                        } else {
+                            state = "banking";
+                            trip+=1;  //2,3->3,4 and 5->6 SO make 6->1
+                            if (trip==6) {
+                                trip = 1;
+                            }
+                        }
                     }
                     taskCounter = 0;
                 } else {
@@ -584,6 +708,8 @@ public class BlastFurnaceScript extends Script {
                                     } else if (trip == 3) {
                                         trip = 1;
                                     }
+                                } else if (oreToSmelt.equals("Runite ore")) {
+                                    trip+=1;
                                 }
                                 state = "banking";
                                 taskCounter = 0;
@@ -664,7 +790,7 @@ public class BlastFurnaceScript extends Script {
                 RS2Object conveyor = getObjects().closest(9100);
                 if (conveyor != null) {
                     interactionEvent(conveyor, "Put-ore-on");
-                    new ConditionalSleep(2000) {
+                    new ConditionalSleep(10000) {
                         @Override
                         public boolean condition() {
                             return !getInventory().isFull();
@@ -673,27 +799,47 @@ public class BlastFurnaceScript extends Script {
                 }
             }
         }
-        int mithrilOreInFurnace = getConfigs().get(547)>>24;
-        int mithrilBarInCollector = getConfigs().get(545)>>24;
-        int coalInFurnace = getConfigs().get(547)&255;
-        log("Mithril ore in furnace: "+mithrilOreInFurnace);
-        log("Coal in furnace: "+coalInFurnace);
-        log("Mithril bar in collector: "+mithrilBarInCollector);
-        if (mithrilBarInCollector==27) {
-            if (coalInFurnace<100) {
-                log("27 mithril bars & less then 100 coal -> trip 1");
-                trip = 1;
-            } else {
-                log("27 mithril bars & more then 100 coal -> trip 3");
+        if (oreToSmelt.equals("Mithril ore")) {
+            int mithrilOreInFurnace = getConfigs().get(547) >> 24;
+            int mithrilBarInCollector = getConfigs().get(545) >> 24;
+            int coalInFurnace = getConfigs().get(547) & 255;
+            log("Mithril ore in furnace: " + mithrilOreInFurnace);
+            log("Coal in furnace: " + coalInFurnace);
+            log("Mithril bar in collector: " + mithrilBarInCollector);
+            if (mithrilBarInCollector == 27) {
+                if (coalInFurnace < 100) {
+                    log("27 mithril bars & less then 100 coal -> trip 1");
+                    trip = 1;
+                } else {
+                    log("27 mithril bars & more then 100 coal -> trip 3");
+                    trip = 3;
+                }
+            } else if (mithrilBarInCollector == 28) {
+                log("28 mithril bars -> trip 1");
                 trip = 3;
+                state = "getFromFurnace";
+            } else if (mithrilBarInCollector == 0) {
+                log("0 mithril bars -> trip 2");
+                trip = 2;
             }
-        } else if (mithrilBarInCollector==28) {
-            log("28 mithril bars -> trip 1");
-            trip = 3;
-            state = "getFromFurnace";
-        } else if (mithrilBarInCollector==0) {
-            log("0 mithril bars -> trip 2");
-            trip = 2;
+        } else if (oreToSmelt.equals("Runite ore")) {
+            int runiteBarInCollector = (getConfigs().get(546) >> 8)&255;
+            int coalInFurnace = getConfigs().get(547) & 255;
+            log("Coal in furnace: " + coalInFurnace);
+            log("Runite bar in collector: " + runiteBarInCollector);
+            if (runiteBarInCollector==27) {
+                if (coalInFurnace<=54) {
+                    trip = 1;
+                } else {
+                    trip = 4;
+                }
+            } else if (coalInFurnace>135) {
+                trip = 3;
+            } else if (coalInFurnace>108) {
+                trip = 5;
+            } else {
+                trip = 2;
+            }
         }
         checkedStateOnStart = true;
 
@@ -761,8 +907,14 @@ public class BlastFurnaceScript extends Script {
                     return keldagrimArea.contains(myPlayer().getPosition());
                 }
             }.sleep();
+            if (keldagrimArea.contains(myPlayer().getPosition())) {
+                taskCounter=0;
+            } else {
+                log("Teleporting to blast furnace did not work, trying again");
+                taskCounter++;
+            }
         }
-        if (door1Area.contains(myPlayer().getPosition())) {
+        else if (door1Area.contains(myPlayer().getPosition())) {
             sleep(1000,1500);
             RS2Object door1 = getObjects().closest(6977);
             if (door1 != null) {
@@ -780,7 +932,7 @@ public class BlastFurnaceScript extends Script {
                 log("Could not find first door");
             }
         }
-        if (door2Area.contains(myPlayer().getPosition())) {
+        else if (door2Area.contains(myPlayer().getPosition())) {
             RS2Object door2 = getObjects().closest(6102);
             if (door2 != null) {
                 door2.interact("Open");
@@ -798,7 +950,7 @@ public class BlastFurnaceScript extends Script {
             walkEvent(new Position(2930, 10194, 0));
             sleep(100, 200);
         }
-        if (door3Area.contains(myPlayer().getPosition())) {
+        else if (door3Area.contains(myPlayer().getPosition())) {
             RS2Object door3 = getObjects().closest(6975);
             if (door3 != null) {
                 door3.interact("Open");
@@ -813,7 +965,7 @@ public class BlastFurnaceScript extends Script {
                 log("Third door is already open");
             }
         }
-        if (lastArea.contains(myPlayer().getPosition())) {
+        else if (lastArea.contains(myPlayer().getPosition())) {
             getObjects().closest(9084).interact("Climb-down");
             new ConditionalSleep(5000) {
                 @Override
@@ -821,6 +973,9 @@ public class BlastFurnaceScript extends Script {
                     return !myPlayer().isMoving();
                 }
             }.sleep();
+        } else {
+            log("Stuck at going to blast furnace, trying again");
+            taskCounter++;
         }
     }
 
@@ -844,18 +999,26 @@ public class BlastFurnaceScript extends Script {
                 }
             }.sleep();
             getWidgets().getWidgetContainingText("Bank").interact("Collect to bank");
-            sleep(300,500);
-            if (getChatbox().getMessages(Chatbox.MessageType.ALL).get(0).equals("You have nothing to collect.") || getChatbox().getMessages(Chatbox.MessageType.ALL).get(1).equals("You have nothing to collect.") || getChatbox().getMessages(Chatbox.MessageType.ALL).get(2).equals("You have nothing to collect.")) {
+            sleep(1000,1200);
+            if (getChatbox().getMessages(Chatbox.MessageType.ALL).get(0).equals("You have nothing to collect.") || getChatbox().getMessages(Chatbox.MessageType.ALL).get(1).equals("You have nothing to collect.") || getChatbox().getMessages(Chatbox.MessageType.ALL).get(2).equals("You have nothing to collect.") || getChatbox().getMessages(Chatbox.MessageType.ALL).get(3).equals("You have nothing to collect.")) {
                 log("Did not collect from collection box");
                 stateGE = "goToGE";
+                didCollectFromDeposit = false;
             } else {
                 log("Collected items from collection box");
-                stateGE = "idle";
-                coalInBank = 200;
-                mithrilOreInBank = 200;
-                staminaPotionInBank = 200;
-            }
+                stateGE = "goToGE";
+                didCollectFromDeposit = true;
 
+//                coalInBank = 200;
+//                mithrilOreInBank = 200;
+//                runiteOreInBank = 200;
+//                staminaPotionInBank = 200;
+
+            }
+            taskCounter=0;
+        } else {
+            log("Was not able to interact with bank, trying again");
+            taskCounter++;
         }
     }
 
@@ -900,7 +1063,11 @@ public class BlastFurnaceScript extends Script {
                 bank.withdraw(ringOfWealth, 1);
                 bank.enableMode(Bank.BankMode.WITHDRAW_NOTE);
                 sleep(100, 200);
-                bank.withdrawAll("Mithril bar");
+                if (oreToSmelt.equals("Runite ore")) {
+                    bank.withdrawAll("Runite bar");
+                } else {
+                    bank.withdrawAll("Mithril bar");
+                }
                 bank.withdrawAll("Coins");
                 sleep(1000, 1200);
                 bank.close();
@@ -919,6 +1086,10 @@ public class BlastFurnaceScript extends Script {
         }
         if (varrockArea.contains(myPlayer().getPosition())) {
             stateGE = "buyFromGE";
+            taskCounter=0;
+        } else {
+            log("Did not TP to varrock, trying again.");
+            taskCounter++;
         }
 
 
@@ -941,31 +1112,38 @@ public class BlastFurnaceScript extends Script {
         if (getGrandExchange().isOpen()) {
             log("Opened GE");
             sleep(300,500);
-            getGrandExchange().sellItem(2360,600,getInventory().getItem(2360).getAmount());
+            getGrandExchange().sellItem(2364, 12000, getInventory().getItem(2364).getAmount()); //2364 runite bar      2360 mithril bar
             sleep(2000,3000);
             getGrandExchange().collect();
             log("Sold bars on GE");
-            getGrandExchange().buyItem(453,"Coal",150,26000);
             sleep(1000,2000);
-            getGrandExchange().buyItem(447,"Mithril o",150,13000);
-            sleep(2000,3000);
-            getGrandExchange().collect();
-            sleep(500,700);
+            if (didCollectFromDeposit) {
+                getGrandExchange().buyItem(451, "Runite o", priceRuniteOre, 1000);  //447 mithril ore     451 runite ore
+                sleep(2000,3000);
+            } else {
+                getGrandExchange().buyItem(451, "Runite o", priceRuniteOre+500, 1000);  //447 mithril ore     451 runite ore
+                sleep(2000,3000);
+                getGrandExchange().collect();
+                sleep(1000,2000);
+            }
             getGrandExchange().close();
-            sleep(100,200);
-            getBank().open();
-            new ConditionalSleep(8000) {
-                @Override
-                public boolean condition() {
-                    return getBank().isOpen();
-                }
-            }.sleep();
-            sleep(400,500);
-            getBank().depositAllExcept("Coal bag");
-            log("Deposited all items to bank");
+            sleep(600,1000);
+//            getBank().open();
+//            new ConditionalSleep(8000) {
+//                @Override
+//                public boolean condition() {
+//                    return getBank().isOpen();
+//                }
+//            }.sleep();
+//            sleep(400,500);
+//            getBank().depositAllExcept("Coal bag");
+//            log("Deposited all items to bank");
             stateGE = "idle";
+            runiteOreInBank = 200;
+            taskCounter=0;
         } else {
             log("Did not open GE");
+            taskCounter++;
         }
     }
 

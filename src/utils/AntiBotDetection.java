@@ -18,7 +18,7 @@ public class AntiBotDetection {
         int i = MethodProvider.random(1,100);
         if (i < 15) {
             bot.log("Anti ban: moving camera");
-            moveCamera();
+//            moveCamera();
         } else if (i<20) {
             bot.log("Anti ban: checking random window");
             checkRandomWindow();
@@ -30,6 +30,7 @@ public class AntiBotDetection {
             checkFriends();
         } else if (i<100) {
             bot.log("Anti ban: moving mouse out of screen");
+
             moveMouseOutOfScreen();
         }
     }
@@ -62,6 +63,9 @@ public class AntiBotDetection {
         bot.getTabs().open(Tab.SKILLS);
         int id = 17;
         switch (script) {
+            case "thieving":
+                id = 12;
+                break;
             case "mining":
                 id = 17;
                 break;
@@ -105,8 +109,9 @@ public class AntiBotDetection {
         }
     }
 
-    public void moveMouseOutOfScreen() {
+    public void moveMouseOutOfScreen() throws InterruptedException {
         bot.getMouse().moveOutsideScreen();
+        MethodProvider.sleep(MethodProvider.random(10000,30000));
     }
 
 }

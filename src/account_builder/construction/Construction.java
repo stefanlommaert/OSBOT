@@ -1,5 +1,11 @@
+package account_builder.construction;
+
+import org.osbot.rs07.api.NPCS;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.Entity;
+import org.osbot.rs07.api.model.NPC;
+import org.osbot.rs07.api.model.RS2Object;
+import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.event.InteractionEvent;
 import org.osbot.rs07.event.WebWalkEvent;
@@ -12,25 +18,18 @@ import utils.*;
 import java.awt.*;
 import java.util.concurrent.TimeUnit;
 
-@ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "testingScript")
-public class ScriptTemplate extends Script {
-    CustomBreakManager customBreakManager = new CustomBreakManager();
-    AntiBotDetection antiBotDetection = new AntiBotDetection(this, "mining");
+@ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "Stefan Construction")
+public class Construction extends Script {
     private final MouseTrail TRAIL = new MouseTrail(0, 255, 255, 2000, this);
     private final MouseCursor CURSOR = new MouseCursor(25, 2, Color.red, this);
-    private long nextPause = System.currentTimeMillis()+ (long) random(30, 60) *60*1000;
-    private boolean breakingStatus = false;
-    int durationUntilNextAntiBan = 60000*8;
-    long start_time = System.currentTimeMillis();
-    Skill skillToTrack = Skill.MINING;
+    Skill skillToTrack = Skill.CONSTRUCTION;
+    String status = "building";
 
 
     @Override
     public void onStart() throws InterruptedException {
         try {
             log("Bot started");
-            customBreakManager.exchangeContext(getBot());
-            getBot().getRandomExecutor().overrideOSBotRandom(customBreakManager);
             getExperienceTracker().start(skillToTrack);
             setMouseProfile();
 
@@ -47,32 +46,50 @@ public class ScriptTemplate extends Script {
         g.setFont(font);
         g.setColor(Color.white);
         g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(skillToTrack)), 10, 104);
-        if (breakingStatus) {
-            g.setColor(Color.red);
-            g.fillOval(200, 200, 50, 50);
-        }
     }
 
     @Override
     public int onLoop() throws InterruptedException {
         try {
-            if (System.currentTimeMillis() > nextPause) {
-                log("Pausing for some minutes");
-                breakingStatus = true;
-                nextPause = System.currentTimeMillis() + (long) random(35, 65) * 1000 * 60;
-                customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(random(5, 8)), true);
-                return 5000;
+            NPC cook = getNpcs().closest("Cook");
+            if (cook==null) {
+                if (getInventory().contains("Oak plank") && status.equals("building")) {
+                    RS2Object larderSpace = getObjects().closest(15403);
+                    if (larderSpace!=null) {
+                        larderSpace.interact("Build");
+                        sleep(850,950);
+                        getKeyboard().typeString("2");
+                        sleep(850,950);
+                        status = "removing";
+                    }
+                } if (status.equals("removing")) {
+                    RS2Object larder = getObjects().closest(13566);
+                    if (larder!=null) {
+                        larder.interact("Remove");
+                        sleep(850,950);
+                        getKeyboard().typeString("1");
+                        sleep(850,950);
+                        status = "building";
+                    }
+                }
+            } else {
+                sleep(850,950);
+                RS2Widget chatMessage = getWidgets().getWidgetContainingText("work");
+                if (chatMessage != null) {
+                    getDialogues().clickContinue();
+                    sleep(850,950);
+                    getKeyboard().typeString("1");
+                    sleep(850,950);
+                    cook.interact("Talk-to");
+                    sleep(850,950);
+                }
+                cook.interact("Talk-to");
+                sleep(850,950);
+                getKeyboard().typeString("1");
+                sleep(850,950);
             }
-            breakingStatus=false;
-            if ((System.currentTimeMillis() - start_time) > durationUntilNextAntiBan) {
-                log("Executing anti ban measure");
-                antiBotDetection.antiBan();
-                start_time = System.currentTimeMillis();
-                durationUntilNextAntiBan = 60000 *random(7,15);
-                log("Time until next anti ban: "+Integer.toString(durationUntilNextAntiBan/60000) +"minutes");
 
-            }
-            return 600;
+            return 200;
 
         } catch(Exception e) {
             log("ERROR");

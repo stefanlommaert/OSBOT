@@ -37,7 +37,7 @@ public class NecklaceEnchanter extends Script {
     public void onStart() throws InterruptedException {
         try {
             log("Bot started");
-            log("Mining V3");
+            log("Enchanter V3");
             customBreakManager.exchangeContext(getBot());
             getBot().getRandomExecutor().overrideOSBotRandom(customBreakManager);
             getExperienceTracker().start(Skill.MAGIC);
@@ -93,7 +93,7 @@ public class NecklaceEnchanter extends Script {
                 }
 
             }
-            if (!getInventory().contains("Ruby amulet")) {
+            if (!getInventory().contains("Diamond amulet")) {
                 goBanking();
             } else {
                 enchantAmulet();
@@ -110,7 +110,7 @@ public class NecklaceEnchanter extends Script {
 
     private void enchantAmulet() {
         if (getTabs().isOpen(Tab.MAGIC)) {
-            RS2Widget enchantSpell = getWidgets().get(218,34);
+            RS2Widget enchantSpell = getWidgets().get(218,42);
             enchantSpell.interact("Cast");
             new ConditionalSleep(1200) {
                 @Override
@@ -119,7 +119,7 @@ public class NecklaceEnchanter extends Script {
                 }
             }.sleep();
             if (getTabs().isOpen(Tab.INVENTORY)) {
-                getInventory().getItem("Ruby amulet").interact("Cast");
+                getInventory().getItem("Diamond amulet").interact("Cast");
             }
         } else {
             new ConditionalSleep(1800) {
@@ -144,10 +144,15 @@ public class NecklaceEnchanter extends Script {
             bank.depositAllExcept("Cosmic rune");
             sleep(800,1000);
             if (!getInventory().isFull()) {
-                bank.withdrawAll("Ruby amulet");
-                sleep(500,700);
-                bank.close();
-                sleep(300,400);
+                if (bank.contains("Diamond amulet")) {
+                    bank.withdrawAll("Diamond amulet");
+                    sleep(500, 700);
+                    bank.close();
+                    sleep(300, 400);
+                } else {
+                    log("Out of amulets, please restock");
+                    stop();
+                }
             }
         }
     }

@@ -53,4 +53,28 @@ public class InventoryManagement {
 
 
     }
+
+    public void dropAllItems() {
+        final Inventory inventory = bot.getInventory();
+        bot.getKeyboard().pressKey(16);
+        new ConditionalSleep(random(50,100)) {
+            @Override
+            public boolean condition() {
+                return false;
+            }
+        }.sleep();
+        for (int slot : DROP_PATTERN_1) {
+            inventory.hover(slot);
+            bot.mouse.click(false);
+        }
+        new ConditionalSleep(random(50,100)) {
+            @Override
+            public boolean condition() {
+                return false;
+            }
+        }.sleep();
+        bot.getKeyboard().releaseKey(16);
+
+
+    }
 }
