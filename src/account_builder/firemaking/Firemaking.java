@@ -11,6 +11,7 @@ import org.osbot.rs07.event.interaction.MouseMoveProfile;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
+import utils.GUI;
 import utils.MouseCursor;
 import utils.MouseTrail;
 
@@ -18,6 +19,7 @@ import java.awt.*;
 
 @ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "Stefan Firemaking")
 public class Firemaking extends Script {
+
     private MouseTrail trail = new MouseTrail(0, 255, 255, 2000, this);
     private MouseCursor cursor = new MouseCursor(25, 2, Color.red, this);
     private boolean positionToStartFire = false;
@@ -26,6 +28,8 @@ public class Firemaking extends Script {
     public void onStart() throws InterruptedException {
         try {
             log("Bot started");
+            getExperienceTracker().start(Skill.FIREMAKING);
+
             setMouseProfile();
 
         } catch(Exception e) {
@@ -35,6 +39,7 @@ public class Firemaking extends Script {
     }
 
     public void onPaint(Graphics2D g){
+        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.FIREMAKING)), 10, 104);
         trail.paint(g);
         cursor.paint(g);
     }
@@ -42,7 +47,7 @@ public class Firemaking extends Script {
     @Override
     public int onLoop() throws InterruptedException {
         try {
-            if (getSkills().getStatic(Skill.FIREMAKING) >= 50) {
+            if (getSkills().getStatic(Skill.FIREMAKING) >= 62) {
                 log("Finished firemaking, stopping now");
                 stop();
             }

@@ -38,7 +38,6 @@ public class Thieving extends Script {
     private boolean stopRunning = false;
     private String state = "thieving";
     private final Area THIEVING_AREA = new Area(2675, 3319, 2668, 3315);
-    InventoryManagement inventoryManagement = new InventoryManagement(this);
 
 
     @Override

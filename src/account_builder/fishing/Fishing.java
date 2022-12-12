@@ -92,7 +92,7 @@ public class Fishing extends Script {
                                     fishingSpot.interact("Lure");
                                 }
                             } else if (state.equals("cooking")) {
-                                if (getInventory().contains("Raw trout")) {
+                                if (getInventory().contains("Raw trout") || getInventory().contains("Raw salmon")) {
                                     RS2Object fire = getObjects().closest(43475);
                                     if (fire != null) {
                                         fire.interact("Cook");

@@ -44,9 +44,9 @@ public class MiningScript extends Script {
             getBot().getRandomExecutor().overrideOSBotRandom(customBreakManager);
             getExperienceTracker().start(Skill.MINING);
             setMouseProfile();
-//            if (!miningArea.contains(myPosition())) {
-//                walkToArea(miningArea);
-//            }
+            if (!miningArea.contains(myPosition())) {
+                walkToArea(miningArea);
+            }
 
         } catch(Exception e) {
             log("error at onStart()");
@@ -87,18 +87,23 @@ public class MiningScript extends Script {
 
             }
 
-            if (getSkills().getStatic(Skill.MINING)==11 && getInventory().contains("Black pickaxe")) {
-                getInventory().getItem("Black pickaxe").interact("Wield");
-            } else if (getSkills().getStatic(Skill.MINING)==21 && getInventory().contains("Mithril pickaxe")) {
-                getInventory().getItem("Mithril pickaxe").interact("Wield");
+            if (getSkills().getStatic(Skill.MINING)==11 && getInventory().contains("Black pickaxe") && getInventory().contains("Steel pickaxe")) {
+                getInventory().getItem("Steel pickaxe").interact("Drop");
+            } else if (getSkills().getStatic(Skill.MINING)==21 && getInventory().contains("Mithril pickaxe") && getInventory().contains("Black pickaxe")) {
+                getInventory().getItem("Black pickaxe").interact("Drop");
             }
             if (getInventory().isFull()) {
 //                inventory.dropAllExcept("Mithril pickaxe","Black pickaxe");
-                inventoryManagement.dropAll("Iron ore");
+                if (getInventory().contains("Iron ore")) {
+                    inventoryManagement.dropAll("Iron ore");
+                } else if (getInventory().contains("Copper ore")) {
+                    inventoryManagement.dropAll("Copper ore");
+                }
             }
             else {
                 if (!myPlayer().isAnimating()) {
-                    powerMine();
+//                    powerMine();
+                    mineOre();
                 }
 
             }

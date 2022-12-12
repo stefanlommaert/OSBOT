@@ -488,8 +488,12 @@ public class BlastFurnaceScript extends Script {
                     }
                 }
                 Item coalbag = getInventory().getItem("Coal bag");
+                boolean justFilledCoalbag = false;
                 if (coalbag!=null) {
-                    coalbag.interact("Fill");
+                    if (coalbag.hasAction("Fill")) {
+                        coalbag.interact("Fill");
+                        justFilledCoalbag = true;
+                    }
                 } else {
                     log("No coalbag in inventory, getting coalbag from bank");
                     bank.withdraw("Coal bag", 1);
@@ -499,7 +503,7 @@ public class BlastFurnaceScript extends Script {
 
                 }
                 bank.withdrawAll(ore);
-                if ((getChatbox().getMessages(Chatbox.MessageType.ALL).get(0).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(1).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(2).equals("The coal bag contains 27 pieces of coal."))){
+                if (!justFilledCoalbag || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(0).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(1).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(2).equals("The coal bag contains 27 pieces of coal."))){
                     bank.close();
                     new ConditionalSleep(1000) {
                         @Override
@@ -676,7 +680,21 @@ public class BlastFurnaceScript extends Script {
         RS2Object furnace = getObjects().closest(9092);
         if (getDialogues().isPendingContinuation()) {
             log("Pending conversation for furnace");
+            taskCounter++;
             getDialogues().clickContinue();
+        } else if (getInventory().isFull()){
+            log("Inventory was full, so did not collect bars.");
+            if (oreToSmelt.equals("Mithril ore")) {
+                if (trip == 1) {
+                    trip = 2;
+                } else if (trip == 3) {
+                    trip = 1;
+                }
+            } else if (oreToSmelt.equals("Runite ore")) {
+                trip+=1;
+            }
+            state = "banking";
+            taskCounter = 0;
         } else {
             if (furnace != null) {
                 if (interactionEvent(furnace, "Take")) {
@@ -695,7 +713,7 @@ public class BlastFurnaceScript extends Script {
                         }.sleep();
                         if (getDialogues().inDialogue() && !getDialogues().isPendingContinuation()) {
                             getKeyboard().typeString(" ", false);
-                            new ConditionalSleep(1000) {
+                            new ConditionalSleep(2000) {
                                 @Override
                                 public boolean condition() {
                                     return getInventory().isFull();
