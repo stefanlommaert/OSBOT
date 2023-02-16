@@ -1,5 +1,6 @@
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.Entity;
+import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.event.InteractionEvent;
 import org.osbot.rs07.event.WebWalkEvent;
@@ -46,7 +47,7 @@ public class ScriptTemplate extends Script {
         Font font = new Font("Open Sans", Font.PLAIN, 16);
         g.setFont(font);
         g.setColor(Color.white);
-        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(skillToTrack)), 10, 104);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(skillToTrack)), 10, 104);
         if (breakingStatus) {
             g.setColor(Color.red);
             g.fillOval(200, 200, 50, 50);
@@ -56,22 +57,12 @@ public class ScriptTemplate extends Script {
     @Override
     public int onLoop() throws InterruptedException {
         try {
-            if (System.currentTimeMillis() > nextPause) {
-                log("Pausing for some minutes");
-                breakingStatus = true;
-                nextPause = System.currentTimeMillis() + (long) random(35, 65) * 1000 * 60;
-                customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(random(5, 8)), true);
+            if (takeBreak()) {
                 return 5000;
-            }
-            breakingStatus=false;
-            if ((System.currentTimeMillis() - start_time) > durationUntilNextAntiBan) {
-                log("Executing anti ban measure");
-                antiBotDetection.antiBan();
-                start_time = System.currentTimeMillis();
-                durationUntilNextAntiBan = 60000 *random(7,15);
-                log("Time until next anti ban: "+Integer.toString(durationUntilNextAntiBan/60000) +"minutes");
+            } breakingStatus=false;
 
-            }
+
+            doAntiBan();
             return 600;
 
         } catch(Exception e) {
@@ -89,6 +80,29 @@ public class ScriptTemplate extends Script {
                 return false;
             }
         }.sleep();
+    }
+
+    private boolean takeBreak() {
+        if (System.currentTimeMillis() > nextPause) {
+            log("Pausing for some minutes");
+            breakingStatus = true;
+            nextPause = System.currentTimeMillis() + (long) random(35, 65) * 1000 * 60;
+            customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(random(5, 8)), true);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    private void doAntiBan() throws InterruptedException {
+        if ((System.currentTimeMillis() - start_time) > durationUntilNextAntiBan) {
+            log("Executing anti ban measure");
+            antiBotDetection.antiBan();
+            start_time = System.currentTimeMillis();
+            durationUntilNextAntiBan = 60000 *random(7,15);
+            log("Time until next anti ban: "+Integer.toString(durationUntilNextAntiBan/60000) +"minutes");
+
+        }
     }
 
     private boolean interactionEvent(Entity entity, String action) {

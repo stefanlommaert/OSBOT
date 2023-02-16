@@ -10,6 +10,7 @@ import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.InteractionEvent;
+import org.osbot.rs07.event.WalkingEvent;
 import org.osbot.rs07.event.WebWalkEvent;
 import org.osbot.rs07.event.interaction.MouseMoveProfile;
 import org.osbot.rs07.script.Script;
@@ -20,6 +21,8 @@ import utils.*;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 @ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "Stefan Motherlode Mine")
 public class MotherlodeMineScript extends Script {
@@ -29,13 +32,12 @@ public class MotherlodeMineScript extends Script {
     long timeLastAntiBan = System.currentTimeMillis();
     int durationUntilNextAntiBan = 60000*8;
     long start_time = System.currentTimeMillis();
-    private long nextPause = System.currentTimeMillis()+ (long) random(30, 60) *60*1000;
+    private long nextPause = System.currentTimeMillis()+ (long) random(30, 40) *60*1000;
 
     private boolean breakingStatus = false;
-
     private final MouseTrail trail = new MouseTrail(0, 255, 255, 2000, this);
     private final MouseCursor cursor = new MouseCursor(25, 2, Color.red, this);
-
+    Area motherlodeArea = new Area(3711, 5694, 3779, 5631);
     private String state = "mining";
     long waitingTime = System.currentTimeMillis();
     Position[] positionOresList = {
@@ -143,9 +145,37 @@ Position[] hopperArea = {
         try {
             log("Bot started");
             log("Mother lode V2");
+
             customBreakManager.exchangeContext(getBot());
             getBot().getRandomExecutor().overrideOSBotRandom(customBreakManager);
             getExperienceTracker().start(Skill.MINING);
+            sleep(100,200);
+            getMouse().move(random(80,120), random(80,120));
+            sleep(1000,2000);
+            if (getMouse().isOnScreen()) {
+                log("Mouse is on screen");
+                log("Scrolling mouse");
+                for (int i = 0; i < 35; i++) {
+                    getMouse().scrollDown();
+                    sleep(30,35);
+                    if (i%9==0) {
+                        sleep(200,250);
+                    }
+                }
+                sleep(300,500);
+                for (int i = 0; i < 3; i++) {
+                    getMouse().scrollUp();
+                    sleep(25,35);
+                }
+
+            } else {
+                log("Mouse is not on screen");
+            }
+
+            if (motherlodeArea.contains(myPosition())) {
+                log("walking to mine area");
+                walkToArea(mineArea[random(0,mineArea.length-1)]);
+            }
 //            setMouseProfile();
 
         } catch(Exception e) {
@@ -163,8 +193,8 @@ Position[] hopperArea = {
         Font font = new Font("Open Sans", Font.PLAIN, 16);
         g.setFont(font);
         g.setColor(Color.white);
-        g.drawString("Time run: "+GUI.formatTime(totalTime), 10, 104);
-        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.MINING)), 10, 104+16);
+        g.drawString("Time run: "+ Formatter.formatTime(totalTime), 10, 104);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.MINING)), 10, 104+16);
         if (breakingStatus) {
             g.setColor(Color.red);
             g.fillOval(200, 200, 50, 50);
@@ -174,6 +204,96 @@ Position[] hopperArea = {
     @Override
     public int onLoop() throws InterruptedException {
         try {
+            if (System.currentTimeMillis() > nextPause) {
+                log("Pausing for some minutes");
+                breakingStatus = true;
+                int timeToBreak = random(10, 20);
+                nextPause = System.currentTimeMillis() + (long) (random(20, 30)+timeToBreak) * 1000 * 60;
+                customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(timeToBreak), true);
+                return 5000;
+            }
+            breakingStatus=false;
+
+
+            if (!motherlodeArea.contains(myPosition())) {
+                bank.open();
+                new ConditionalSleep(6000) {
+                    @Override
+                    public boolean condition() {
+                        return bank.isOpen();
+                    }
+                }.sleep();
+                if (bank.isOpen()) {
+                    bank.withdraw("Rune pickaxe", 1);
+                    sleep(1200,1800);
+                    bank.withdraw("Skills necklace(6)", 1);
+                    sleep(1200,1800);
+                    bank.close();
+                    sleep(1200,1800);
+                    getInventory().getItem("Skills necklace(6)").interact("Rub");
+                    sleep(600, 1200);
+                    getWidgets().getWidgetContainingText("Mining").hover();
+                    sleep(600, 1200);
+                    getMouse().click(false);
+                    sleep(3000,3600);
+                    RS2Object motherlodeEntrance = getObjects().closest("Cave");
+                    if (motherlodeEntrance!=null) {
+                        motherlodeEntrance.interact("Enter");
+                        sleep(10000,10600);
+//                        getWalking().webWalk(new Position(3730,5683,0));
+//                        walkingEvent(new Position(3730,5683,0));
+                        new ConditionalSleep(10000) {
+                            @Override
+                            public boolean condition() {
+                                Filter<RS2Object> filter1 = new Filter<RS2Object>() {
+                                    public boolean match(RS2Object obj) {
+                                        return ((Objects.equals(obj.getName(), "Rockfall") && obj.getPosition().equals(new Position(3731,5683,0))));
+                                    }
+                                };
+                                RS2Object rockfall = getObjects().closest(filter1);
+                                return rockfall!=null;
+                            }
+                        }.sleep();
+
+                        Filter<RS2Object> filter1 = new Filter<RS2Object>() {
+                            public boolean match(RS2Object obj) {
+                                return ((Objects.equals(obj.getName(), "Rockfall") && obj.getPosition().equals(new Position(3731,5683,0))));
+                            }
+                        };
+                        RS2Object fallenRock = getObjects().closest(filter1);
+
+//                        RS2Object fallenRock = getObjects().closest("Rockfall");
+                        if (fallenRock!=null) {
+                            fallenRock.interact("Mine");
+                            sleep(6000,7000);
+//                            walkingEvent(new Position(3732,5681,0));
+
+                        }
+
+                        Filter<RS2Object> filter2 = new Filter<RS2Object>() {
+                            public boolean match(RS2Object obj) {
+                                return ((Objects.equals(obj.getName(), "Rockfall") && obj.getPosition().equals(new Position(3733,5680,0))));
+                            }
+                        };
+                        RS2Object fallenRock2 = getObjects().closest(filter2);
+
+//                        RS2Object fallenRock = getObjects().closest("Rockfall");
+                        if (fallenRock2!=null) {
+                            fallenRock2.interact("Mine");
+                            sleep(5000,6000);
+//                            walkingEvent(new Position(3732,5681,0));
+
+                        }
+
+                        walkToArea(mineArea[random(0,mineArea.length-1)]);
+
+
+                    }
+
+
+                }
+            }
+
             if ((System.currentTimeMillis() - timeLastAntiBan) > durationUntilNextAntiBan) {
                 log("Executing anti ban measure");
                 antiBotDetection.antiBan();
@@ -182,25 +302,31 @@ Position[] hopperArea = {
                 log("Time until next anti ban: "+Integer.toString(durationUntilNextAntiBan/60000) +"minutes");
 
             }
-            if (state.equals("mining")) {
-                if (getInventory().isFull()) {
-                    state = "goingToHopper";
-                } else {
-                    if (!myPlayer().isAnimating()) {
-                        sleep(3000);
+            switch (state) {
+                case "mining":
+                    if (getInventory().isFull()) {
+                        state = "goingToHopper";
+                    } else {
                         if (!myPlayer().isAnimating()) {
-                            mineOre();
+                            sleep(3000);
+                            if (!myPlayer().isAnimating()) {
+                                mineOre();
+                            }
                         }
                     }
-                }
-            } else if (state.equals("goingToHopper")) {
-                goToHopper();
-            } else if (state.equals("waitForWashing")) {
-                waitForWashing();
-            } else if (state.equals("gettingWashedOres")) {
-                goToWasher();
-            } else if (state.equals("depositingOres")) {
-                depositOres();
+                    break;
+                case "goingToHopper":
+                    goToHopper();
+                    break;
+                case "waitForWashing":
+                    waitForWashing();
+                    break;
+                case "gettingWashedOres":
+                    goToWasher();
+                    break;
+                case "depositingOres":
+                    depositOres();
+                    break;
             }
             return random(200,400);
 
@@ -317,15 +443,15 @@ Position[] hopperArea = {
             }.sleep();
         }
         int hopTo = 303;
-        if (myPlayer().getName().equals("SMITHINGaGOD")) {
+        if (myPlayer().getName().equals("Gibberissh")) {
             int[] worlds = {303,304,311,312,327,328};
             int rand = random(0, worlds.length - 1);
             hopTo = worlds[rand];
-        } else if (myPlayer().getName().equals("SexySmithing")) {
+        } else if (myPlayer().getName().equals("Tousartt")) {
             int[] worlds = {336,343,344,351,352};
             int rand = random(0, worlds.length - 1);
             hopTo = worlds[rand];
-        } else if (myPlayer().getName().equals("aSmithingGod")) {
+        } else if (myPlayer().getName().equals("JJENNY DEATH")) {
             int[] worlds = {359,360,367,368,375,376};
             int rand = random(0, worlds.length - 1);
             hopTo = worlds[rand];
@@ -383,7 +509,7 @@ Position[] hopperArea = {
                     return false;
                 }
             }.sleep();
-            depositBox.depositAll();
+            depositBox.depositAllExcept("Rune pickaxe");
             new ConditionalSleep(random(200, 600)) {
                 @Override
                 public boolean condition() {
@@ -437,6 +563,22 @@ Position[] hopperArea = {
         return ev.hasFinished() && !ev.hasFailed();
     }
 
+    private boolean walkingEvent(Position pos) {
+        WalkingEvent ev = new WalkingEvent(pos);
+        ev.setEnergyThreshold(40);
+        ev.setMinDistanceThreshold(0);
+        execute(ev);
+        return ev.hasFinished() && !ev.hasFailed();
+    }
+
+    private void sleep(int time1, int time2) {
+        new ConditionalSleep(random(time1, time2)) {
+            @Override
+            public boolean condition() {
+                return false;
+            }
+        }.sleep();
+    }
     private void setMouseProfile() {
         MouseMoveProfile profile = new MouseMoveProfile();
         profile.setFlowVariety(MouseMoveProfile.FlowVariety.MEDIUM); //MEDIUM

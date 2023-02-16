@@ -1,6 +1,5 @@
 package blast_furnace;
 
-import org.osbot.Con;
 import org.osbot.rs07.api.Bank;
 import org.osbot.rs07.api.Chatbox;
 import org.osbot.rs07.api.map.Area;
@@ -17,9 +16,8 @@ import org.osbot.rs07.event.interaction.MouseMoveProfile;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
-import sun.misc.Perf;
 import utils.CustomBreakManager;
-import utils.GUI;
+import utils.Formatter;
 import utils.MouseCursor;
 import utils.MouseTrail;
 
@@ -47,12 +45,14 @@ public class BlastFurnaceScript extends Script {
     private String ore = "Coal";
     private String oreToSmelt = "Mithril ore";
     private boolean useCameraForInteract = false;
+    private boolean filledCoalbag = false;
     private long timePayedForeman = 0;
     private long lastDrankEnergy = 0;
     private final Area BLAST_FURNACE_AREA = new Area(1934,4975,1958,4955);
     private final Area BANK_AREA = new Area(1943,4960,1950,4958);
     private final Area CONVEYOR_AREA = new Area(1930,4968,1940,4964);
     private int taskCounter = 0;
+    private int totalResetCounter = 0;
     private int errorCounter = 0;
     private long lastTimeReset = 0;
     private long nextPause = System.currentTimeMillis()+ (long) random(30, 60) *60*1000;
@@ -123,8 +123,8 @@ public class BlastFurnaceScript extends Script {
             log("Stopping script, because not enough xp/h");
             stop();
         }
-        g.drawString("Time run: "+ utils.GUI.formatTime(totalTime), 10, 104);
-        g.drawString("XP/H: "+ utils.GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.SMITHING)), 10, 104+16);
+        g.drawString("Time run: "+ Formatter.formatTime(totalTime), 10, 104);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.SMITHING)), 10, 104+16);
         g.drawString("Total bars made: "+ totalBarsMade, 10, 104+16*2);
         g.drawString(coalInBank + " coal", 10, 104+16*3);
         if (oreToSmelt.equals("Mithril ore")) {
@@ -145,10 +145,19 @@ public class BlastFurnaceScript extends Script {
             if (taskCounter == 4) {
                 useCameraForInteract = true;
             }
-            if (taskCounter >= 5) {
-                if ((System.currentTimeMillis() - lastTimeReset) > 1800000) {
+            if ((System.currentTimeMillis() - lastTimeReset) > 1800000) {
+                if (totalResetCounter>0) {
+                    log("Reducing reset counter by one.");
+                    totalResetCounter--;
+                }
+                lastTimeReset = System.currentTimeMillis();
+            }
+            if (taskCounter >= 10) {
+//                if ((System.currentTimeMillis() - lastTimeReset) > 1800000) {
+                if (totalResetCounter<3) {
+                    totalResetCounter++;
                     log("Resetting script, bot is stuck at: " + state);
-                    lastTimeReset = System.currentTimeMillis();
+//                    lastTimeReset = System.currentTimeMillis();
                     taskCounter = 0;
                     state = "banking";
                     if (BLAST_FURNACE_AREA.contains(myPlayer().getPosition())) {
@@ -206,7 +215,7 @@ public class BlastFurnaceScript extends Script {
                     log("Pausing for some minutes");
                     breakingStatus = true;
                     nextPause = System.currentTimeMillis() + (long) random(35, 65) * 1000 * 60;
-                    customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(random(5, 8)), true);
+                    customBreakManager.startBreaking(TimeUnit.MINUTES.toMillis(random(5, 15)), true);
                     return 5000;
                 }
 
@@ -443,6 +452,14 @@ public class BlastFurnaceScript extends Script {
             if (bank.isOpen()) {
                 bank.depositAllExcept("Coal bag");
                 sleep(650,700);
+                if (filledCoalbag) {
+                    Item coalbag = getInventory().getItem("Coal bag");
+                    if (coalbag!=null) {
+                        coalbag.interact("Empty");
+                    }
+                    filledCoalbag = false;
+                }
+
                 if (oreToSmelt.equals("Mithril ore")) {
                     mithrilOreInBank = getBank().getItem("Mithril ore").getAmount();
                 } else if (oreToSmelt.equals("Runite ore")) {
@@ -488,12 +505,9 @@ public class BlastFurnaceScript extends Script {
                     }
                 }
                 Item coalbag = getInventory().getItem("Coal bag");
-                boolean justFilledCoalbag = false;
                 if (coalbag!=null) {
-                    if (coalbag.hasAction("Fill")) {
-                        coalbag.interact("Fill");
-                        justFilledCoalbag = true;
-                    }
+                    coalbag.interact("Fill");
+                    filledCoalbag = true;
                 } else {
                     log("No coalbag in inventory, getting coalbag from bank");
                     bank.withdraw("Coal bag", 1);
@@ -503,7 +517,8 @@ public class BlastFurnaceScript extends Script {
 
                 }
                 bank.withdrawAll(ore);
-                if (!justFilledCoalbag || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(0).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(1).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(2).equals("The coal bag contains 27 pieces of coal."))){
+                if ((getChatbox().getMessages(Chatbox.MessageType.ALL).get(0).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(1).equals("The coal bag contains 27 pieces of coal.")) || (getChatbox().getMessages(Chatbox.MessageType.ALL).get(2).equals("The coal bag contains 27 pieces of coal."))){
+                    sleep(200,400);
                     bank.close();
                     new ConditionalSleep(1000) {
                         @Override
@@ -514,6 +529,7 @@ public class BlastFurnaceScript extends Script {
                     if (getInventory().isFull()) {
                         state = "putOresOnConveyor";
                         taskCounter = 0;
+                        filledCoalbag = false;
                     } else {
                         log("Did not take ores from inventory");
                         resetBanking();
@@ -682,6 +698,8 @@ public class BlastFurnaceScript extends Script {
             log("Pending conversation for furnace");
             taskCounter++;
             getDialogues().clickContinue();
+            log("click continue");
+            sleep(600,1000);
         } else if (getInventory().isFull()){
             log("Inventory was full, so did not collect bars.");
             if (oreToSmelt.equals("Mithril ore")) {
@@ -720,6 +738,7 @@ public class BlastFurnaceScript extends Script {
                                 }
                             }.sleep();
                             if (getInventory().isFull()) {
+                                log("Inv full after taking from furnace.");
                                 if (oreToSmelt.equals("Mithril ore")) {
                                     if (trip == 1) {
                                         trip = 2;
@@ -1024,13 +1043,14 @@ public class BlastFurnaceScript extends Script {
                 didCollectFromDeposit = false;
             } else {
                 log("Collected items from collection box");
-                stateGE = "goToGE";
-                didCollectFromDeposit = true;
+//                stateGE = "goToGE";
+//                didCollectFromDeposit = true;
 
-//                coalInBank = 200;
-//                mithrilOreInBank = 200;
-//                runiteOreInBank = 200;
-//                staminaPotionInBank = 200;
+                stateGE = "idle";
+                coalInBank = 200;
+                mithrilOreInBank = 200;
+                runiteOreInBank = 200;
+                staminaPotionInBank = 200;
 
             }
             taskCounter=0;
@@ -1114,6 +1134,7 @@ public class BlastFurnaceScript extends Script {
     }
 
     private void buyFromGE() throws InterruptedException {
+        stop();
         Area GEArea = new Area(3162, 3486, 3167, 3485);
         getWalking().walk(GEArea.getRandomPosition());
         sleep(1000,1500);

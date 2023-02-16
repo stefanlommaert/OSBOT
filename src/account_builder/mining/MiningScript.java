@@ -15,7 +15,6 @@ import org.osbot.rs07.utility.ConditionalSleep;
 import utils.*;
 
 import java.awt.*;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "Stefan Mining")
@@ -26,12 +25,14 @@ public class MiningScript extends Script {
 
     private MouseTrail trail = new MouseTrail(0, 255, 255, 2000, this);
     private MouseCursor cursor = new MouseCursor(25, 2, Color.red, this);
-
+    Area varrockArea = new Area(3140, 3513, 3187, 3468);
+    Area doricsArea = new Area(2943, 3458, 2961, 3438);
     Area miningArea = new Area(3281, 3374, 3288, 3372);
     private long nextPause = System.currentTimeMillis()+ (long) random(30, 60) *60*1000;
     private boolean breakingStatus = false;
     int durationUntilNextAntiBan = 60000*8;
     long start_time = System.currentTimeMillis();
+    public boolean setupDone = false;
 
 
     int rockToMine = 0;
@@ -44,9 +45,33 @@ public class MiningScript extends Script {
             getBot().getRandomExecutor().overrideOSBotRandom(customBreakManager);
             getExperienceTracker().start(Skill.MINING);
             setMouseProfile();
-            if (!miningArea.contains(myPosition())) {
-                walkToArea(miningArea);
+            sleep(100,200);
+            getMouse().move(random(80,120), random(80,120));
+            sleep(1000,2000);
+            if (getMouse().isOnScreen()) {
+                log("Mouse is on screen");
+                log("Scrolling mouse");
+                for (int i = 0; i < 35; i++) {
+                    getMouse().scrollDown();
+                    sleep(30,35);
+                    if (i%9==0) {
+                        sleep(200,250);
+                    }
+                }
+                sleep(300,500);
+                for (int i = 0; i < 3; i++) {
+                    getMouse().scrollUp();
+                    sleep(25,35);
+                }
+
+            } else {
+                log("Mouse is not on screen");
             }
+            getCamera().toTop();
+            if (doricsArea.contains(myPosition())) {
+                walkToArea(varrockArea);
+            }
+            sleep(3000,3600);
 
         } catch(Exception e) {
             log("error at onStart()");
@@ -60,7 +85,7 @@ public class MiningScript extends Script {
         Font font = new Font("Open Sans", Font.PLAIN, 16);
         g.setFont(font);
         g.setColor(Color.white);
-        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.MINING)), 10, 104);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.MINING)), 10, 104);
         if (breakingStatus) {
             g.setColor(Color.red);
             g.fillOval(200, 200, 50, 50);
@@ -70,6 +95,16 @@ public class MiningScript extends Script {
     @Override
     public int onLoop() throws InterruptedException {
         try {
+            if (!setupDone && varrockArea.contains(myPlayer().getPosition())) {
+                log("setting up inventory");
+                setupInventory();
+            }
+            if (getSkills().getStatic(Skill.MINING)>=41) {
+                log("Reached 41 mining");
+                stop();
+            }
+
+
             if (System.currentTimeMillis() > nextPause) {
                 log("Pausing for some minutes");
                 breakingStatus = true;
@@ -91,13 +126,14 @@ public class MiningScript extends Script {
                 getInventory().getItem("Steel pickaxe").interact("Drop");
             } else if (getSkills().getStatic(Skill.MINING)==21 && getInventory().contains("Mithril pickaxe") && getInventory().contains("Black pickaxe")) {
                 getInventory().getItem("Black pickaxe").interact("Drop");
+            } else if (getSkills().getStatic(Skill.MINING)==31 && getInventory().contains("Adamant pickaxe") && getInventory().contains("Mithril pickaxe")) {
+                getInventory().getItem("Mithril pickaxe").interact("Drop");
             }
             if (getInventory().isFull()) {
-//                inventory.dropAllExcept("Mithril pickaxe","Black pickaxe");
-                if (getInventory().contains("Iron ore")) {
-                    inventoryManagement.dropAll("Iron ore");
-                } else if (getInventory().contains("Copper ore")) {
+                if (getInventory().contains("Copper ore")) {
                     inventoryManagement.dropAll("Copper ore");
+                } else if (getInventory().contains("Iron ore")) {
+                    inventoryManagement.dropAll("Iron ore");
                 }
             }
             else {
@@ -107,7 +143,7 @@ public class MiningScript extends Script {
                 }
 
             }
-            return random(30,70);
+            return random(210,260);
 
         } catch(Exception e) {
             log("ERROR");
@@ -117,12 +153,50 @@ public class MiningScript extends Script {
 
     }
 
+    public void setupInventory() throws InterruptedException {
+        Area GEArea = new Area(3162, 3486, 3167, 3485);
+        getWalking().walk(GEArea.getRandomPosition());
+        sleep(1000,1500);
+        bank.open();
+        new ConditionalSleep(8000) {
+            @Override
+            public boolean condition() {
+                return getBank().isOpen();
+            }
+        }.sleep();
+
+        if (bank.isOpen()) {
+            log("Opened bank");
+            bank.depositAll();
+            sleep(1200,1800);
+            getBank().withdraw("Steel pickaxe",1);
+            sleep(1200,1800);
+            getBank().withdraw("Black pickaxe",1);
+            sleep(1200,1800);
+            getBank().withdraw("Mithril pickaxe",1);
+            sleep(1200,1800);
+            getBank().withdraw("Adamant pickaxe",1);
+            sleep(1200,1800);
+            bank.close();
+            setupDone = true;
+            sleep(1200,1800);
+
+            if (!miningArea.contains(myPosition())) {
+                walkToArea(miningArea);
+            }
+        } else {
+            log("Did not open bank");
+            stop();
+        }
+    }
+
     public void mineOre() {
 
         if(getSkills().getStatic(Skill.MINING)>=15) {
             Filter<RS2Object> myFilter = new Filter<RS2Object>() {
                 public boolean match(RS2Object obj) {
-                    return ((obj.getId()==11364 && obj.getPosition().equals(new Position(3285, 3369, 0))) || (obj.getId()==11365 &&obj.getPosition().equals(new Position(3288, 3370, 0)))|| (obj.getId()==11365 &&obj.getPosition().equals(new Position(3286, 3369, 0))));
+                    return ((obj.getId()==11364 && obj.getPosition().equals(new Position(3285, 3369, 0))) || (obj.getId()==11365 &&obj.getPosition().equals(new Position(3288, 3370, 0))));
+//                    return ((obj.getId()==11364 && obj.getPosition().equals(new Position(3285, 3369, 0))) || (obj.getId()==11365 &&obj.getPosition().equals(new Position(3288, 3370, 0)))|| (obj.getId()==11365 &&obj.getPosition().equals(new Position(3286, 3369, 0))));
                 }
             };
             RS2Object ore = getObjects().closest(myFilter);
@@ -221,6 +295,14 @@ public class MiningScript extends Script {
         }
     }
 
+    private void sleep(int time1, int time2) {
+        new ConditionalSleep(random(time1, time2)) {
+            @Override
+            public boolean condition() {
+                return false;
+            }
+        }.sleep();
+    }
 
     private boolean interactionEvent(Entity entity, String action) {
         InteractionEvent ev = new InteractionEvent(entity, action);

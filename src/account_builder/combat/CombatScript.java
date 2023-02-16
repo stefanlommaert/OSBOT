@@ -4,14 +4,13 @@ import org.osbot.rs07.api.filter.Filter;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.constants.Banks;
 import org.osbot.rs07.api.model.NPC;
-import org.osbot.rs07.api.ui.RS2Widget;
 import org.osbot.rs07.api.ui.Skill;
 import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.InteractionEvent;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
-import utils.GUI;
+import utils.Formatter;
 import utils.MouseCursor;
 import utils.MouseTrail;
 
@@ -63,7 +62,7 @@ public class CombatScript extends Script {
         Font font = new Font("Open Sans", Font.PLAIN, 16);
         g.setFont(font);
         g.setColor(Color.white);
-        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.STRENGTH)+getExperienceTracker().getGainedXPPerHour(Skill.DEFENCE)+getExperienceTracker().getGainedXPPerHour(Skill.ATTACK)), 10, 104);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.STRENGTH)+getExperienceTracker().getGainedXPPerHour(Skill.DEFENCE)+getExperienceTracker().getGainedXPPerHour(Skill.ATTACK)), 10, 104);
     }
 
     @Override

@@ -1,6 +1,6 @@
 package utils;
 
-public class GUI {
+public class Formatter {
 
 
     public static final String formatTime(final long ms){

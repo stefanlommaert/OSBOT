@@ -11,7 +11,7 @@ import org.osbot.rs07.event.interaction.MouseMoveProfile;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
-import utils.GUI;
+import utils.Formatter;
 import utils.MouseCursor;
 import utils.MouseTrail;
 
@@ -39,7 +39,7 @@ public class Firemaking extends Script {
     }
 
     public void onPaint(Graphics2D g){
-        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.FIREMAKING)), 10, 104);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.FIREMAKING)), 10, 104);
         trail.paint(g);
         cursor.paint(g);
     }

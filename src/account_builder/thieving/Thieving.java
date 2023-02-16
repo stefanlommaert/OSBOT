@@ -5,10 +5,8 @@ import org.osbot.rs07.api.map.Position;
 import org.osbot.rs07.api.map.constants.Banks;
 import org.osbot.rs07.api.model.Entity;
 import org.osbot.rs07.api.model.NPC;
-import org.osbot.rs07.api.model.RS2Object;
 import org.osbot.rs07.api.ui.EquipmentSlot;
 import org.osbot.rs07.api.ui.Skill;
-import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.InteractionEvent;
 import org.osbot.rs07.event.WebWalkEvent;
 import org.osbot.rs07.event.interaction.MouseMoveProfile;
@@ -18,7 +16,6 @@ import org.osbot.rs07.utility.ConditionalSleep;
 import utils.*;
 
 import java.awt.*;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "Stefan Thieving")
@@ -61,7 +58,7 @@ public class Thieving extends Script {
         Font font = new Font("Open Sans", Font.PLAIN, 16);
         g.setFont(font);
         g.setColor(Color.white);
-        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(skillToTrack)), 10, 104);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(skillToTrack)), 10, 104);
         if (breakingStatus) {
             g.setColor(Color.red);
             g.fillOval(200, 200, 50, 50);

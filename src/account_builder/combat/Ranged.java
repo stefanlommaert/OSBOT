@@ -5,17 +5,15 @@ import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.map.constants.Banks;
 import org.osbot.rs07.api.model.NPC;
 import org.osbot.rs07.api.ui.Skill;
-import org.osbot.rs07.api.ui.Tab;
 import org.osbot.rs07.event.InteractionEvent;
 import org.osbot.rs07.script.Script;
 import org.osbot.rs07.script.ScriptManifest;
 import org.osbot.rs07.utility.ConditionalSleep;
-import utils.GUI;
+import utils.Formatter;
 import utils.MouseCursor;
 import utils.MouseTrail;
 
 import java.awt.*;
-import java.util.ArrayList;
 
 @ScriptManifest(info = "",logo = "", version = 1, author = "stefan3140", name = "Stefan Ranged")
 public class Ranged extends Script {
@@ -59,7 +57,7 @@ public class Ranged extends Script {
         Font font = new Font("Open Sans", Font.PLAIN, 16);
         g.setFont(font);
         g.setColor(Color.white);
-        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.RANGED)), 10, 104);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(Skill.RANGED)), 10, 104);
     }
 
     @Override

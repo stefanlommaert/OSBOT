@@ -10,7 +10,6 @@ import org.osbot.rs07.utility.ConditionalSleep;
 import utils.*;
 
 import java.awt.*;
-import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 @ScriptManifest(info = "",logo = "", version = 1, author = "stefan3140", name = "Stefan Woodcutting")
@@ -63,8 +62,8 @@ public class WoodcuttingScript extends Script {
         Font font = new Font("Open Sans", Font.BOLD, 16);
         g.setFont(font);
         g.setColor(Color.white);
-        g.drawString("Time run: "+ utils.GUI.formatTime(totalTime), 10, 16);
-        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(skillToTrack)), 10, 16+16);
+        g.drawString("Time run: "+ Formatter.formatTime(totalTime), 10, 16);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(skillToTrack)), 10, 16+16);
         g.drawString("Logs/H: "+ logsPerHour, 10, 16+16*2);
 
         if (breakingStatus) {

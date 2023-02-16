@@ -1,6 +1,5 @@
 package account_builder.construction;
 
-import org.osbot.rs07.api.NPCS;
 import org.osbot.rs07.api.map.Area;
 import org.osbot.rs07.api.model.Entity;
 import org.osbot.rs07.api.model.NPC;
@@ -16,7 +15,6 @@ import org.osbot.rs07.utility.ConditionalSleep;
 import utils.*;
 
 import java.awt.*;
-import java.util.concurrent.TimeUnit;
 
 @ScriptManifest(info = "", logo = "", version = 1, author = "stefan3140", name = "Stefan Construction")
 public class Construction extends Script {
@@ -45,7 +43,7 @@ public class Construction extends Script {
         Font font = new Font("Open Sans", Font.PLAIN, 16);
         g.setFont(font);
         g.setColor(Color.white);
-        g.drawString("XP/H: "+ GUI.formatValue(getExperienceTracker().getGainedXPPerHour(skillToTrack)), 10, 104);
+        g.drawString("XP/H: "+ Formatter.formatValue(getExperienceTracker().getGainedXPPerHour(skillToTrack)), 10, 104);
     }
 
     @Override
