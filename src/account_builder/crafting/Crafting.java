@@ -188,7 +188,7 @@ public class Crafting extends Script {
                 }
             }.sleep();
             if (getDialogues().inDialogue() && !getDialogues().isPendingContinuation()) {
-                sleep(500,800);
+                sleep(600,800);
                 getKeyboard().typeString(" ", false);
                 sleep(500,1000);
                 int rand = random(1,100);

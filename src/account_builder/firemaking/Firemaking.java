@@ -47,7 +47,7 @@ public class Firemaking extends Script {
     @Override
     public int onLoop() throws InterruptedException {
         try {
-            if (getSkills().getStatic(Skill.FIREMAKING) >= 62) {
+            if (getSkills().getStatic(Skill.FIREMAKING) >= 75) {
                 log("Finished firemaking, stopping now");
                 stop();
             }

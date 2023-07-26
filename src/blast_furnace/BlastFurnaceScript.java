@@ -36,6 +36,7 @@ public class BlastFurnaceScript extends Script {
     private int runiteOreInBank = 1;
     private int coalInBank = 1;
     private int staminaPotionInBank = 1;
+    private int coinsInBank = 1;
     private int totalBarsMade = 0;
     private String state = "banking";
     private String stateGE = "idle";
@@ -190,10 +191,6 @@ public class BlastFurnaceScript extends Script {
                     case "buyFromGE":
                         buyFromGE();
                         return 100;
-                }
-                if (state.equals("banking") && (getConfigs().get(795)<100000)) {
-                    log("Money deposit almost empty, restocking now");
-                    restockMoneyDeposit();
                 }
 
                 checkCamera();
@@ -452,6 +449,13 @@ public class BlastFurnaceScript extends Script {
             if (bank.isOpen()) {
                 bank.depositAllExcept("Coal bag");
                 sleep(650,700);
+
+                if (state.equals("banking") && (getConfigs().get(795)<40000)) {
+                    log("Gold coffer almost empty, restocking now");
+                    restockMoneyDeposit();
+                    return ;
+                }
+
                 if (filledCoalbag) {
                     Item coalbag = getInventory().getItem("Coal bag");
                     if (coalbag!=null) {
@@ -467,6 +471,7 @@ public class BlastFurnaceScript extends Script {
                 }
                 coalInBank = getBank().getItem("Coal").getAmount();
                 staminaPotionInBank = getBank().getItem("Stamina potion(1)").getAmount();
+                coinsInBank = getBank().getItem("Coins").getAmount();
                 if (settings.getRunEnergy() < 75 || ((System.currentTimeMillis() - lastDrankEnergy) > 110000)) {
                     bank.withdraw("Stamina potion(1)", 1);
                     new ConditionalSleep(2000) {
@@ -1187,7 +1192,30 @@ public class BlastFurnaceScript extends Script {
     }
 
     private void restockMoneyDeposit() {
-        ;
+        if (coinsInBank<1000000) {
+            log("Not enough coins to restock gold coffer. Stopping now.");
+            sleep(10000,10001);
+            stop();
+        }
+        getBank().withdraw("Coins", 1000000);
+        sleep(700,800);
+        getBank().close();
+        sleep(700,800);
+        RS2Object coffer = getObjects().closest("Coffer");
+        if (coffer==null) {
+            log("Couldn't find coffer, trying again");
+            return;
+        }
+        coffer.interact("Use");
+        sleep(3000,4000);
+        getKeyboard().typeString("1", false);
+        sleep(700,800);
+        getKeyboard().typeString("1m", true);
+        log("Successfully filled coffer with gold");
+        sleep(1250,1400);
+
+
+
     }
 
     private boolean interactionEvent(Entity entity, String action) {
